@@ -1,11 +1,14 @@
 package com.crossal.recordreader.customer;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import javax.persistence.Entity;
 import javax.persistence.Id;
 
 @Entity
 public class Customer {
     @Id
+    @JsonProperty("user_id")
     private Integer id;
     private String name;
     private Double latitude;

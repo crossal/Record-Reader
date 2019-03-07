@@ -13,15 +13,14 @@ import javax.persistence.EntityTransaction;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 public class CustomerServiceImpl implements CustomerService {
 
     private static final Logger logger = Logger.getLogger(CustomerServiceImpl.class);
 
-    private static final int CUSTOMER_SAVE_BATCH_SIZE = 100;
-    private static final int CUSTOMER_GET_BATCH_SIZE = 100;
+    private static final int CUSTOMER_SAVE_BATCH_SIZE = 5;
+    private static final int CUSTOMER_GET_BATCH_SIZE = 5;
 
     private int distance;
     private CustomerStreamFactory customerStreamFactory;
@@ -39,26 +38,25 @@ public class CustomerServiceImpl implements CustomerService {
         try (BufferedReader reader = customerStreamFactory.getReader(file)) {
             tx.begin();
 
-            List<Customer> customersToSave = new ArrayList<>();
             ObjectMapper mapper = new ObjectMapper();
             String line = reader.readLine();
 
             // read file line by line
+            int batchSize = 0;
             while (line != null) {
                 Customer newCustomer = mapper.readValue(line, Customer.class);
-                if (MathUtil.distanceInWithinKms(Locations.HQ_LAT, Locations.HQ_LONG, newCustomer.getLatitude(), newCustomer.getLongitude(), kms)) {
-                    customersToSave.add(newCustomer);
+                if (MathUtil.distanceWithinKms(Locations.HQ_LAT, Locations.HQ_LONG, newCustomer.getLatitude(), newCustomer.getLongitude(), kms)) {
+                    em.persist(newCustomer);
+                    batchSize++;
                 }
-                if (customersToSave.size() >= CUSTOMER_SAVE_BATCH_SIZE) {
-                    em.persist(customersToSave);
+                if (batchSize >= CUSTOMER_SAVE_BATCH_SIZE) {
                     tx.commit();
                     tx.begin();
                     em.clear();
-                    customersToSave.clear();
+                    batchSize = 0;
                 }
                 line = reader.readLine();
             }
-            em.persist(customersToSave);
 
         } catch (IOException e) {
             logger.error("save customers error: "+e);
@@ -75,12 +73,13 @@ public class CustomerServiceImpl implements CustomerService {
         GetCustomersQuery query = new GetCustomersQuery(em);
         List<Customer> customers = query.getCustomers(null, CUSTOMER_GET_BATCH_SIZE);
         if (customers.isEmpty()) {
-            logger.error("No customers have been read/saved.");
+            logger.error("No customers have been read.");
+            return;
         }
         logger.info("Printing customers within " + distance + " kms...");
         while (!customers.isEmpty()) {
             customers.forEach(customer -> logger.info(customer.getName() + " - " + customer.getId()));
-            customers = query.getCustomers(customers.get(0), CUSTOMER_GET_BATCH_SIZE);
+            customers = query.getCustomers(customers.get(customers.size() - 1), CUSTOMER_GET_BATCH_SIZE);
         }
         logger.info("Complete");
     }

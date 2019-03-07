@@ -32,7 +32,7 @@ public class MathUtil {
         }
     }
 
-    public static boolean distanceInWithinKms(double lat1, double lon1, double lat2, double lon2, int distance) {
+    public static boolean distanceWithinKms(double lat1, double lon1, double lat2, double lon2, int distance) {
         return distanceInKms(lat1, lon1, lat2, lon2) < distance;
     }
 }
