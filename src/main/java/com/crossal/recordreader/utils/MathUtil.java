@@ -1,21 +1,6 @@
 package com.crossal.recordreader.utils;
 
 public class MathUtil {
-//    public double getGreatCircleDistanceInKms(double latA, double lngA, double latB, double lngB) {
-//        double pk = Math.PI / 180;
-//
-//        double latARadians = latA * pk;
-//        double lngARadians = lngA * pk;
-//        double latBRadians = latB * pk;
-//        double lngBRadians = lngB * pk;
-//
-//        double dL = (lngA-lngB) / pk;
-//
-//        double t1 = Math.sin(latARadians) * Math.sin(latBRadians);
-//        double t2 = Math.cos(latARadians) * Math.cos(latBRadians) * Math.cos(dL);
-//
-//        double tt = Math.acos(t1 + t2);
-//    }
 
     public static double distanceInKms(double lat1, double lon1, double lat2, double lon2) {
         if ((lat1 == lat2) && (lon1 == lon2)) {

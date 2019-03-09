@@ -5,39 +5,54 @@ import com.crossal.recordreader.utils.Locations;
 import com.crossal.recordreader.utils.MathUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.log4j.Logger;
+import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.EntityManager;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 
 @Service
+@Transactional
 public class CustomerServiceImpl implements CustomerService {
 
     private static final Logger logger = Logger.getLogger(CustomerServiceImpl.class);
 
-    private static final int CUSTOMER_SAVE_BATCH_SIZE = 5;
-    private static final int CUSTOMER_GET_BATCH_SIZE = 5;
+    @Value("${spring.jpa.properties.hibernate.jdbc.batch_size}")
+    private int CUSTOMER_SAVE_BATCH_SIZE;
+    @Value("${spring.jpa.properties.hibernate.jdbc.batch_size}")
+    private int CUSTOMER_GET_BATCH_SIZE;
 
     private int distance;
 
+    @Autowired
+    private EntityManager entityManager;
     @Autowired
     private CustomerRepository customerRepository;
     @Autowired
     private CustomerStreamFactory streamFactory;
 
+    private Session getSession() {
+        return entityManager.unwrap(Session.class);
+    }
+
+    @Override
     public void deleteCustomers() {
         customerRepository.deleteAll();
     }
 
+    @Override
     public void saveCustomersWithinKms(File file, int kms) {
-
         distance = kms;
+        Session session = getSession();
 
         try (BufferedReader reader = streamFactory.getReader(file)) {
             ObjectMapper mapper = new ObjectMapper();
@@ -52,6 +67,8 @@ public class CustomerServiceImpl implements CustomerService {
                     batchSize++;
                 }
                 if (batchSize >= CUSTOMER_SAVE_BATCH_SIZE) {
+                    session.flush();
+                    session.clear();
                     batchSize = 0;
                 }
                 line = reader.readLine();
@@ -59,12 +76,10 @@ public class CustomerServiceImpl implements CustomerService {
 
         } catch (IOException e) {
             logger.error("save customers error: "+e);
-        } finally {
-//            tx.commit();
-//            em.close();
         }
     }
 
+    @Override
     public void printCustomers() {
         Pageable pageable = PageRequest.of(0, CUSTOMER_GET_BATCH_SIZE, Sort.by("id").ascending());
         logger.info("Printing customers within " + distance + " kms...");
