@@ -45,4 +45,19 @@ public class Customer {
     public void setLongitude(Double longitude) {
         this.longitude = longitude;
     }
+
+    public void validate() {
+        if (id == null) {
+            throw new IllegalStateException("id cannot be null");
+        }
+        if (name == null) {
+            throw new IllegalStateException("name cannot be null");
+        }
+        if (latitude == null) {
+            throw new IllegalStateException("latitude cannot be null");
+        }
+        if (longitude == null) {
+            throw new IllegalStateException("longitude cannot be null");
+        }
+    }
 }

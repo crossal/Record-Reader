@@ -3,7 +3,9 @@ package com.crossal.recordreader.customer;
 import com.crossal.recordreader.customer.helpers.CustomerStreamFactory;
 import com.crossal.recordreader.utils.Locations;
 import com.crossal.recordreader.utils.MathUtil;
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import org.apache.log4j.Logger;
 import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +41,8 @@ public class CustomerServiceImpl implements CustomerService {
     private CustomerRepository customerRepository;
     @Autowired
     private CustomerStreamFactory streamFactory;
+    @Autowired
+    private MathUtil mathUtil;
 
     private Session getSession() {
         return entityManager.unwrap(Session.class);
@@ -61,8 +65,18 @@ public class CustomerServiceImpl implements CustomerService {
             // read file line by line
             int batchSize = 0;
             while (line != null) {
-                Customer newCustomer = mapper.readValue(line, Customer.class);
-                if (MathUtil.distanceWithinKms(Locations.HQ_LAT, Locations.HQ_LONG, newCustomer.getLatitude(), newCustomer.getLongitude(), kms)) {
+                Customer newCustomer = null;
+                try {
+                    newCustomer = mapper.readValue(line, Customer.class);
+                    newCustomer.validate();
+                } catch (Exception e) {
+                    logger.info("A customer was unparseable: " + e.getMessage());
+                    continue;
+                } finally {
+                    line = reader.readLine();
+                }
+
+                if (mathUtil.distanceWithinKms(Locations.HQ_LAT, Locations.HQ_LONG, newCustomer.getLatitude(), newCustomer.getLongitude(), kms)) {
                     customerRepository.save(newCustomer);
                     batchSize++;
                 }
@@ -71,11 +85,10 @@ public class CustomerServiceImpl implements CustomerService {
                     session.clear();
                     batchSize = 0;
                 }
-                line = reader.readLine();
             }
 
         } catch (IOException e) {
-            logger.error("save customers error: "+e);
+            logger.error("save customers error: " + e.getMessage());
         }
     }
 
