@@ -3,9 +3,7 @@ package com.crossal.recordreader.customer;
 import com.crossal.recordreader.customer.helpers.CustomerStreamFactory;
 import com.crossal.recordreader.utils.Locations;
 import com.crossal.recordreader.utils.MathUtil;
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import org.apache.log4j.Logger;
 import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -98,7 +96,7 @@ public class CustomerServiceImpl implements CustomerService {
         logger.info("Printing customers within " + distance + " kms...");
         while (true) {
             Page<Customer> page = customerRepository.findAll(pageable);
-            page.getContent().forEach(customer -> logger.info(customer.getName() + " - " + customer.getId()));
+            page.getContent().forEach(customer -> System.out.println(customer.getName() + " - " + customer.getId()));
             if (!page.hasNext()) {
                 break;
             }

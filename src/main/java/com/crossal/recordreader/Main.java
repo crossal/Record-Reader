@@ -26,16 +26,20 @@ public class Main implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
 
-//        if (args.length == 0) {
-//            logger.error("A record file path was not specified.");
-//            return;
-//        }
+        if (args.length == 0) {
+            logger.error("A record file path was not specified.");
+            return;
+        }
+        
+        Integer kms = null;
+        if (args.length > 1) {
+            kms = Integer.valueOf(args[1]);
+        }
 
         try {
-//            File file = new File(args[0]);
-            File file = new File("C:/Users/Alan/workspace/RecordReader/src/main/resources/customers.txt");
+            File file = new File(args[0]);
             customerService.deleteCustomers();
-            customerService.saveCustomersWithinKms(file, 100);
+            customerService.saveCustomersWithinKms(file, kms == null ? 100 : kms);
             customerService.printCustomers();
         } catch (Exception e) {
             System.out.println(e);
