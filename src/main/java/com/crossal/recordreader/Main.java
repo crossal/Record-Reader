@@ -30,7 +30,7 @@ public class Main implements CommandLineRunner {
             logger.error("A record file path was not specified.");
             return;
         }
-        
+
         Integer kms = null;
         if (args.length > 1) {
             kms = Integer.valueOf(args[1]);

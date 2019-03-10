@@ -93,7 +93,7 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     public void printCustomers() {
         Pageable pageable = PageRequest.of(0, CUSTOMER_GET_BATCH_SIZE, Sort.by("id").ascending());
-        logger.info("Printing customers within " + distance + " kms...");
+        System.out.println("Printing customers within " + distance + " kms...");
         while (true) {
             Page<Customer> page = customerRepository.findAll(pageable);
             page.getContent().forEach(customer -> System.out.println(customer.getName() + " - " + customer.getId()));
@@ -102,6 +102,6 @@ public class CustomerServiceImpl implements CustomerService {
             }
             pageable = page.nextPageable();
         }
-        logger.info("...complete");
+        System.out.println("...complete");
     }
 }
