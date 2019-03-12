@@ -1,9 +1,9 @@
 package com.crossal.recordreader.customer;
 
-import com.crossal.recordreader.customer.helpers.CustomerStreamFactory;
+import com.crossal.recordreader.helpers.FileJsonObjReader;
+import com.crossal.recordreader.helpers.FileReaderFactory;
 import com.crossal.recordreader.utils.Locations;
 import com.crossal.recordreader.utils.MathUtil;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.log4j.Logger;
 import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 
@@ -31,16 +30,19 @@ public class CustomerServiceImpl implements CustomerService {
     @Value("${spring.jpa.properties.hibernate.jdbc.batch_size}")
     private int CUSTOMER_GET_BATCH_SIZE;
 
-    private int distance;
-
     @Autowired
     private EntityManager entityManager;
     @Autowired
     private CustomerRepository customerRepository;
     @Autowired
-    private CustomerStreamFactory streamFactory;
-    @Autowired
     private MathUtil mathUtil;
+
+    private int distance;
+    private FileReaderFactory fileReaderFactory;
+
+    public void setFileReaderFactory(FileReaderFactory fileReaderFactory) {
+        this.fileReaderFactory = fileReaderFactory;
+    }
 
     private Session getSession() {
         return entityManager.unwrap(Session.class);
@@ -55,36 +57,26 @@ public class CustomerServiceImpl implements CustomerService {
     public void saveCustomersWithinKms(File file, int kms) {
         distance = kms;
         Session session = getSession();
+        int batchSize = 0;
 
-        try (BufferedReader reader = streamFactory.getReader(file)) {
-            ObjectMapper mapper = new ObjectMapper();
-            String line = reader.readLine();
+        try (FileJsonObjReader<Customer> customerReader = fileReaderFactory.getJsonObjReader(file)){
+            Customer newCustomer = customerReader.readObj(Customer.class);
 
-            // read file line by line
-            int batchSize = 0;
-            while (line != null) {
-                Customer newCustomer = null;
-                try {
-                    newCustomer = mapper.readValue(line, Customer.class);
-                    newCustomer.validate();
-                } catch (Exception e) {
-                    logger.info("A customer was unparseable: " + e.getMessage());
-                    continue;
-                } finally {
-                    line = reader.readLine();
+            while (newCustomer != null) {
+                if (newCustomer.isValid()) {
+                    if (mathUtil.distanceWithinKms(Locations.HQ_LAT, Locations.HQ_LONG, newCustomer.getLatitude(), newCustomer.getLongitude(), kms)) {
+                        customerRepository.save(newCustomer);
+                        batchSize++;
+                    }
+                    if (batchSize >= CUSTOMER_SAVE_BATCH_SIZE) {
+                        session.flush();
+                        session.clear();
+                        batchSize = 0;
+                    }
                 }
 
-                if (mathUtil.distanceWithinKms(Locations.HQ_LAT, Locations.HQ_LONG, newCustomer.getLatitude(), newCustomer.getLongitude(), kms)) {
-                    customerRepository.save(newCustomer);
-                    batchSize++;
-                }
-                if (batchSize >= CUSTOMER_SAVE_BATCH_SIZE) {
-                    session.flush();
-                    session.clear();
-                    batchSize = 0;
-                }
+                newCustomer = customerReader.readObj(Customer.class);
             }
-
         } catch (IOException e) {
             logger.error("save customers error: " + e.getMessage());
         }

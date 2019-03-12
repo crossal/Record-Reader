@@ -46,6 +46,15 @@ public class Customer {
         this.longitude = longitude;
     }
 
+    public boolean isValid() {
+        try {
+            validate();
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public void validate() {
         if (id == null) {
             throw new IllegalStateException("id cannot be null");

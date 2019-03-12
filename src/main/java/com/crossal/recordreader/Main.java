@@ -1,6 +1,7 @@
 package com.crossal.recordreader;
 
 import com.crossal.recordreader.customer.CustomerServiceImpl;
+import com.crossal.recordreader.helpers.FileReaderFactory;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -35,6 +36,9 @@ public class Main implements CommandLineRunner {
         if (args.length > 1) {
             kms = Integer.valueOf(args[1]);
         }
+
+        FileReaderFactory fileReaderFactory = new FileReaderFactory();
+        customerService.setFileReaderFactory(fileReaderFactory);
 
         try {
             File file = new File(args[0]);

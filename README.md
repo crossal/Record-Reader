@@ -1,4 +1,4 @@
-CSVReader
+RecordReader
 ====
 Reads customer json objects from file and prints customers within specified kilometre distance (or default 100)
 
